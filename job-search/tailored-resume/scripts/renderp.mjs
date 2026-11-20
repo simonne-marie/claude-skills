@@ -1,0 +1,16 @@
+import { chromium } from '/Users/simonnevaldez/Documents/Work Folders/VendGogh/Code/scripts/video/node_modules/playwright/index.mjs';
+import { readFileSync } from 'node:fs';
+const [,, pdf, out, PG='1'] = process.argv;
+const b64 = readFileSync(pdf).toString('base64');
+const b = await chromium.launch(); const p = await b.newPage({ viewport: { width: 900, height: 1200 } });
+await p.setContent(`<canvas id=c></canvas><script type=module>const PAGE='${PG}';
+import * as pdfjs from 'https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.min.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc='https://cdn.jsdelivr.net/npm/pdfjs-dist@4.4.168/build/pdf.worker.min.mjs';
+const data=Uint8Array.from(atob('${b64}'),c=>c.charCodeAt(0));
+const doc=await pdfjs.getDocument({data}).promise; const pg=await doc.getPage(parseInt(PAGE));
+const vp=pg.getViewport({scale:1.4}); const c=document.getElementById('c'); c.width=vp.width; c.height=vp.height;
+await pg.render({canvasContext:c.getContext('2d'),viewport:vp}).promise; document.title='done';
+</script>`);
+await p.waitForFunction(() => document.title === 'done', null, { timeout: 30000 });
+await p.locator('#c').screenshot({ path: out, clip: undefined });
+await b.close();
